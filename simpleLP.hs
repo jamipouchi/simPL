@@ -1,3 +1,4 @@
+module SimpleLP (Expr(..), eval, Instr(..), exec) where
 import LookUpTable
 
 data Expr 
@@ -5,9 +6,18 @@ data Expr
     | Var String
     | Add Expr Expr
     | Sub Expr Expr
+    | Mul Expr Expr
+    | Div Expr Expr
+    | Mod Expr Expr
     | Neq Expr Expr
     | Lth Expr Expr
     deriving Show
+
+instance Eq Expr where
+    expr1 == expr2 = (eval expr1 empty) == (eval expr2 empty)
+
+instance Ord Expr where
+    compare expr1 expr2 = compare (eval expr1 empty) (eval expr2 empty)
 
 eval :: Expr -> LookUpTable -> Maybe Int
 eval (Val x) lut = Just x
@@ -17,20 +27,24 @@ eval (Var key) lut =
         Just x -> Just x
 eval (Add expr1 expr2) lut = eval' (+) expr1 expr2 lut
 eval (Sub expr1 expr2) lut = eval' (-) expr1 expr2 lut
+eval (Mul expr1 expr2) lut = eval' (*) expr1 expr2 lut
+eval (Div expr1 expr2) lut = eval' div expr1 expr2 lut
+eval (Mod expr1 expr2) lut = eval' mod expr1 expr2 lut
+--
 eval (Neq expr1 expr2) lut = b2i $ (eval' (/=) expr1 expr2 lut)
 eval (Lth expr1 expr2) lut = b2i $ (eval' (<) expr1 expr2 lut)
-
+--
 eval' :: (Int -> Int -> a) -> Expr -> Expr -> LookUpTable -> Maybe a
 eval' op expr1 expr2 lut = do
     res1 <- eval expr1 lut
     res2 <- eval expr2 lut
     return (op res1 res2)
 
+--
 b2i :: Maybe Bool -> Maybe Int
 b2i (Just False) = Just 0
 b2i (Just True) = Just 1
 b2i Nothing = Nothing
-
 -- I'll prob want to decouple booleans from ints later!
 
 data Instr

@@ -4,6 +4,13 @@ type Mem = String -> Maybe Int
 type Keys = [String]
 data LookUpTable = LUT {mem :: Mem, keys :: Keys}
 
+-- This is for testing
+instance Eq LookUpTable where
+    (LUT mem1 keysL) == (LUT mem2 keysR) = (sameKeys keysL keysR) && (sameVals keysL)
+        where
+            sameKeys l r = (length l == length r) && (and $ map (\k -> elem k r) l)
+            sameVals keys = and $ map (\key -> (mem1 key == mem2 key)) keys
+
 extract :: Maybe Int -> String
 extract (Just x) = show x
 extract Nothing = "?"

@@ -1,4 +1,4 @@
--> Add typical operations (*), (/), (%)
+-> implement booleans
 -> print (expressions de moment, una o mes)
 -> read (enters de moment)
 -> instrucció for (i := a..b)
