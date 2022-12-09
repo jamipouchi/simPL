@@ -1,0 +1,6 @@
+-> Add typical operations (*), (/), (%)
+-> print (expressions de moment, una o mes)
+-> read (enters de moment)
+-> instrucció for (i := a..b)
+
+-> generate AST from input :)
