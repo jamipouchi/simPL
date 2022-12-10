@@ -14,7 +14,7 @@ data Expr
     | Lth Expr Expr
     deriving Show
 
--- |Two expressions are equal if they evaluate to the same value. This is context dependent! (depends on the LookUpTable used)
+-- |Two expressions are equal if they evaluate to the same value with an empty LookUpTable. This is context dependent! (depends on the LookUpTable used)
 instance Eq Expr where
     expr1 == expr2 = (eval expr1 empty) == (eval expr2 empty)
 
@@ -30,11 +30,11 @@ eval (Var key) lut =
     case (get lut key) of
         Nothing -> Nothing
         Just x -> Just x
-eval (Add expr1 expr2) lut = eval' (+) expr1 expr2 lut
-eval (Sub expr1 expr2) lut = eval' (-) expr1 expr2 lut
-eval (Mul expr1 expr2) lut = eval' (*) expr1 expr2 lut
-eval (Div expr1 expr2) lut = safeEval div expr1 expr2 lut
-eval (Mod expr1 expr2) lut = safeEval mod expr1 expr2 lut
+eval (Add expr1 expr2) lut = safeEval (+) expr1 (\_ -> True) expr2 (\_ -> True) lut
+eval (Sub expr1 expr2) lut = safeEval (-) expr1 (\_ -> True) expr2 (\_ -> True) lut
+eval (Mul expr1 expr2) lut = safeEval (*) expr1 (\_ -> True) expr2 (\_ -> True) lut
+eval (Div expr1 expr2) lut = safeEval div expr1 (\_ -> True) expr2 (\x -> (x /= 0)) lut
+eval (Mod expr1 expr2) lut = safeEval mod expr1 (\_ -> True) expr2 (\x -> (x /= 0)) lut
 --
 eval (Neq expr1 expr2) lut = b2i $ (eval' (/=) expr1 expr2 lut)
 eval (Lth expr1 expr2) lut = b2i $ (eval' (<) expr1 expr2 lut)
@@ -46,11 +46,11 @@ eval' op expr1 expr2 lut = do
     res2 <- eval expr2 lut
     return (op res1 res2)
 
-safeEval :: (Int -> Int -> Int) -> Expr -> Expr -> LookUpTable -> Maybe Int
-safeEval op expr1 expr2 lut = do
+safeEval :: (Int -> Int -> Int) -> Expr -> (Int -> Bool) -> Expr -> (Int -> Bool) -> LookUpTable -> Maybe Int
+safeEval op expr1 cond1 expr2 cond2 lut = do
     res1 <- eval expr1 lut
     res2 <- eval expr2 lut
-    if (res2 == 0) then Nothing else return (op res1 res2)
+    if ((cond1 res1) && (cond2 res2)) then return (op res1 res2) else Nothing
 
 b2i :: Maybe Bool -> Maybe Int
 b2i (Just False) = Just 0
