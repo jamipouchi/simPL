@@ -14,6 +14,7 @@ data Expr
     | Lth Expr Expr
     deriving Show
 
+
 -- |Two expressions are equal if they evaluate to the same value with an empty LookUpTable. This is context dependent! (depends on the LookUpTable used)
 instance Eq Expr where
     expr1 == expr2 = (eval expr1 empty) == (eval expr2 empty)
@@ -25,7 +26,7 @@ instance Ord Expr where
 -- |Given a LookUpTable evaluates an expression. It can return Nothing for unassigned lookups, division and mod operations.
 -- This is context dependent! (depends on the LookUpTable used)
 eval :: Expr -> LookUpTable -> Maybe Int
-eval (Val x) lut = Just x
+eval (Val x) _ = Just x
 eval (Var key) lut = 
     case (get lut key) of
         Nothing -> Nothing
@@ -40,7 +41,7 @@ eval (Neq expr1 expr2) lut = b2i $ (eval' (/=) expr1 expr2 lut)
 eval (Lth expr1 expr2) lut = b2i $ (eval' (<) expr1 expr2 lut)
 --
 -- a is cuz we still working with bools ...zzzz
-eval' :: (Int -> Int -> a) -> Expr -> Expr -> LookUpTable -> Maybe a
+eval' :: (Int -> Int -> Bool) -> Expr -> Expr -> LookUpTable -> Maybe Bool
 eval' op expr1 expr2 lut = do
     res1 <- eval expr1 lut
     res2 <- eval expr2 lut
