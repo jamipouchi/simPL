@@ -1,0 +1,42 @@
+Test suite Lexer: RUNNING...
+=== prop_Val from tests\Lexer-test.hs:13 ===
++++ OK, passed 100 tests.
+
+=== prop_Var from tests\Lexer-test.hs:16 ===
+*** Failed! Falsified (after 5 tests and 1 shrink):
+")"
+
+=== prop_Add from tests\Lexer-test.hs:19 ===
++++ OK, passed 100 tests.
+
+=== prop_Ass from tests\Lexer-test.hs:22 ===
+*** Failed! Falsified (after 9 tests and 4 shrinks):
+"}"
+0
+
+=== prop_Cond from tests\Lexer-test.hs:26 ===
++++ OK, passed 100 tests.
+
+=== prop_Div from tests\Lexer-test.hs:29 ===
++++ OK, passed 100 tests.
+
+=== prop_Loop from tests\Lexer-test.hs:32 ===
++++ OK, passed 100 tests.
+
+=== prop_Lth from tests\Lexer-test.hs:35 ===
++++ OK, passed 100 tests.
+
+=== prop_Mod from tests\Lexer-test.hs:38 ===
++++ OK, passed 100 tests.
+
+=== prop_Mul from tests\Lexer-test.hs:41 ===
++++ OK, passed 100 tests.
+
+=== prop_Neq from tests\Lexer-test.hs:44 ===
++++ OK, passed 100 tests.
+
+=== prop_Sub from tests\Lexer-test.hs:47 ===
++++ OK, passed 100 tests.
+
+Test suite Lexer: PASS
+Test suite logged to: C:\Users\mique\Documents\random\SimPL\dist-newstyle\build\x86_64-windows\ghc-8.10.7\SimPL-0.1.0.0\t\Lexer\test\SimPL-0.1.0.0-Lexer.log

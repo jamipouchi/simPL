@@ -1,0 +1,51 @@
+Test suite simPL: RUNNING...
+=== prop_Val from tests\SimPL-test.hs:7 ===
++++ OK, passed 100 tests.
+
+=== prop_Var_assigned from tests\SimPL-test.hs:10 ===
++++ OK, passed 100 tests.
+
+=== prop_Var_unassigned from tests\SimPL-test.hs:12 ===
++++ OK, passed 1 test.
+
+=== prop_Add from tests\SimPL-test.hs:15 ===
++++ OK, passed 100 tests.
+
+=== prop_Sub from tests\SimPL-test.hs:18 ===
++++ OK, passed 100 tests.
+
+=== prop_Mul from tests\SimPL-test.hs:21 ===
++++ OK, passed 100 tests.
+
+=== prop_Div from tests\SimPL-test.hs:24 ===
++++ OK, passed 100 tests.
+
+=== prop_Mod from tests\SimPL-test.hs:27 ===
++++ OK, passed 100 tests.
+
+=== prop_Lth from tests\SimPL-test.hs:32 ===
++++ OK, passed 100 tests.
+
+=== prop_Neq from tests\SimPL-test.hs:35 ===
++++ OK, passed 100 tests.
+
+=== prop_Ass from tests\SimPL-test.hs:40 ===
++++ OK, passed 100 tests.
+
+=== prop_Reass from tests\SimPL-test.hs:42 ===
++++ OK, passed 100 tests.
+
+=== prop_NoOp from tests\SimPL-test.hs:45 ===
++++ OK, passed 1 test.
+
+=== prop_Cond from tests\SimPL-test.hs:48 ===
++++ OK, passed 100 tests.
+
+=== prop_Seq from tests\SimPL-test.hs:52 ===
++++ OK, passed 100 tests.
+
+=== prop_Loop from tests\SimPL-test.hs:56 ===
++++ OK, passed 100 tests.
+
+Test suite simPL: PASS
+Test suite logged to: C:\Users\mique\Documents\random\SimPL\dist-newstyle\build\x86_64-windows\ghc-8.10.7\SimPL-0.1.0.0\t\simPL\test\SimPL-0.1.0.0-simPL.log

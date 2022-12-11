@@ -13,6 +13,8 @@ data Token
     | Neq
     | LPt
     | RPt
+    | LCu
+    | RCu
     | Ass
     | Cond
     | Loop
@@ -29,7 +31,9 @@ tokens = [
     ("!=", Neq),
     ("(", LPt),
     (")", RPt),
-    ("<-", Ass),
+    ("{", LCu),
+    ("}", RCu),
+    (":=", Ass),
     ("if", Cond),
     ("while", Loop)
     ]
@@ -40,6 +44,10 @@ file_to_string = do
     input <- readFile "test.txt"
     let content = filter (\c -> ((fromEnum c) >= 32 && (fromEnum c) <= 125)) input
     print (lexer content "")
+
+-- | Entry point to use the lexer
+get_tokens :: String -> [Token]
+get_tokens str = lexer str ""
 
 -- | Given a string, returns a list of Token. It throws no errors, as he accepts anything for variable names. TODO: fix that
 lexer :: String -> String -> [Token]
@@ -64,10 +72,12 @@ extractString :: String -> (Token, String)
 extractString w = separate "" w
     where
         separate :: String -> String -> (Token, String)
-        separate var "" = (Var var, "")
+        separate var "" = (Var (trim var), "")
         separate (var) (r:token) = if (any (\(str,_) -> isPrefixTo (r:token) str) tokens) then
-            (Var var, r:token) else 
+            (Var (trim var), r:token) else 
                 separate (var ++ [r]) token
+        trim :: String -> String
+        trim = takeWhile (\c -> c /= ' ') . dropWhile (\c -> c == ' ')
 
 isDigit :: Char -> Bool
 isDigit c = (c >= '0' && c <= '9')

@@ -2,7 +2,7 @@ module LookUpTable (LookUpTable, empty, get, set) where
 
 type Mem = String -> Maybe Int
 type Keys = [String]
-data LookUpTable = LUT {mem :: Mem, keys :: Keys}
+data LookUpTable = LUT Mem Keys
 
 -- This is for testing
 instance Eq LookUpTable where
@@ -21,8 +21,8 @@ instance Show LookUpTable where
             showOne :: String -> String
             showOne k = "'" ++ k ++ "': " ++ extract (get lut k)
             toString :: LookUpTable -> String
-            toString (LUT mem []) = "Ø"
-            toString (LUT mem [k]) = showOne k
+            toString (LUT _ []) = "Ø"
+            toString (LUT _ [k]) = showOne k
             toString (LUT mem (k:ks)) = showOne k ++ ", " ++ toString(LUT mem ks)
 
 -- |Returns a LookUpTable that maps from any key -> Nothing
@@ -33,7 +33,7 @@ empty = (LUT newMem [])
 
 -- |Given a LookUpTable and a key, returns Just val if it finds a mapping or else Nothing 
 get :: LookUpTable -> String -> Maybe Int
-get (LUT mem keys) key = mem key
+get (LUT mem _) key = mem key
 
 -- |Given a LookUpTable, a key and a val, creates a new LookUpTable with the additional mapping  
 set :: LookUpTable -> String -> Int -> LookUpTable
