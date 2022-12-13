@@ -3,14 +3,14 @@ Test suite Lexer: RUNNING...
 +++ OK, passed 100 tests.
 
 === prop_Var from tests\Lexer-test.hs:16 ===
-*** Failed! Falsified (after 5 tests and 1 shrink):
-")"
+*** Failed! Falsified (after 8 tests and 3 shrinks):
+"<"
 
 === prop_Add from tests\Lexer-test.hs:19 ===
 +++ OK, passed 100 tests.
 
 === prop_Ass from tests\Lexer-test.hs:22 ===
-*** Failed! Falsified (after 9 tests and 4 shrinks):
+*** Failed! Falsified (after 3 tests and 3 shrinks):
 "}"
 0
 

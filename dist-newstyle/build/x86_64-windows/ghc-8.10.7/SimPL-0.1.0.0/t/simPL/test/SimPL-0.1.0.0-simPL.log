@@ -1,50 +1,50 @@
 Test suite simPL: RUNNING...
-=== prop_Val from tests\SimPL-test.hs:7 ===
+=== prop_Val from tests\SimPL-test.hs:9 ===
 +++ OK, passed 100 tests.
 
-=== prop_Var_assigned from tests\SimPL-test.hs:10 ===
+=== prop_Var_assigned from tests\SimPL-test.hs:12 ===
 +++ OK, passed 100 tests.
 
-=== prop_Var_unassigned from tests\SimPL-test.hs:12 ===
+=== prop_Var_unassigned from tests\SimPL-test.hs:14 ===
 +++ OK, passed 1 test.
 
-=== prop_Add from tests\SimPL-test.hs:15 ===
+=== prop_Add from tests\SimPL-test.hs:17 ===
 +++ OK, passed 100 tests.
 
-=== prop_Sub from tests\SimPL-test.hs:18 ===
+=== prop_Sub from tests\SimPL-test.hs:20 ===
 +++ OK, passed 100 tests.
 
-=== prop_Mul from tests\SimPL-test.hs:21 ===
+=== prop_Mul from tests\SimPL-test.hs:23 ===
 +++ OK, passed 100 tests.
 
-=== prop_Div from tests\SimPL-test.hs:24 ===
+=== prop_Div from tests\SimPL-test.hs:26 ===
 +++ OK, passed 100 tests.
 
-=== prop_Mod from tests\SimPL-test.hs:27 ===
+=== prop_Mod from tests\SimPL-test.hs:29 ===
 +++ OK, passed 100 tests.
 
-=== prop_Lth from tests\SimPL-test.hs:32 ===
+=== prop_Lth from tests\SimPL-test.hs:34 ===
 +++ OK, passed 100 tests.
 
-=== prop_Neq from tests\SimPL-test.hs:35 ===
+=== prop_Neq from tests\SimPL-test.hs:37 ===
 +++ OK, passed 100 tests.
 
-=== prop_Ass from tests\SimPL-test.hs:40 ===
+=== prop_Ass from tests\SimPL-test.hs:42 ===
 +++ OK, passed 100 tests.
 
-=== prop_Reass from tests\SimPL-test.hs:42 ===
+=== prop_Reass from tests\SimPL-test.hs:44 ===
 +++ OK, passed 100 tests.
 
-=== prop_NoOp from tests\SimPL-test.hs:45 ===
+=== prop_NoOp from tests\SimPL-test.hs:47 ===
 +++ OK, passed 1 test.
 
-=== prop_Cond from tests\SimPL-test.hs:48 ===
+=== prop_Cond from tests\SimPL-test.hs:50 ===
 +++ OK, passed 100 tests.
 
-=== prop_Seq from tests\SimPL-test.hs:52 ===
+=== prop_Seq from tests\SimPL-test.hs:54 ===
 +++ OK, passed 100 tests.
 
-=== prop_Loop from tests\SimPL-test.hs:56 ===
+=== prop_Loop from tests\SimPL-test.hs:58 ===
 +++ OK, passed 100 tests.
 
 Test suite simPL: PASS
