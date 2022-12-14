@@ -1,6 +1,3 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use infix" #-}
 module LookUpTable (LookUpTable, empty, get, set) where
 
 type Mem = String -> Maybe Int

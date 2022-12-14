@@ -1,4 +1,4 @@
-module Lexer where
+module Lexer (Token (..), getTokens) where
 
 -- | Tokens in SimpleLp.
 data Token
@@ -18,6 +18,7 @@ data Token
   | Ass
   | Cond
   | Loop
+  | Print
   deriving (Eq, Show)
 
 -- | The mapping from string -> Token. (This prob can be done better)
@@ -36,7 +37,8 @@ tokens =
     ("}", RCu),
     (":=", Ass),
     ("if", Cond),
-    ("while", Loop)
+    ("while", Loop),
+    ("print", Print)
   ]
 
 -- -- Space is 32, } is 125. So we accept chars >= 32 and <= 125
@@ -45,7 +47,7 @@ fileToString :: IO ()
 fileToString = do
   input <- readFile "test.txt"
   let content = filter (\c -> fromEnum c >= 32 && fromEnum c <= 125) input
-  print (lexer content "")
+  print $ getTokens content
 
 -- | Entry point to use the lexer
 getTokens :: String -> [Token]
