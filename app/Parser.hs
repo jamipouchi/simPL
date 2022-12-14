@@ -96,7 +96,9 @@ unite iniExpr (restExpr, restTokens) = (iniExpr ++ restExpr, restTokens)
 makeExpression :: [T.Token] -> Expr
 makeExpression [T.Val x] = Val x
 makeExpression [T.Var x] = Var x
-makeExpression (T.LPt : rest) = makeExpression $ init rest
+makeExpression (T.LPt : rest) = case separateParenthesis rest of
+  (tokens, []) -> makeExpression $ init tokens
+  (expressionTokens, rest) -> operate (makeExpression expressionTokens) rest
 makeExpression (leftValToken : opToken : T.LPt : rest)
   | value leftValToken && operator opToken = case priority opToken of
     HIGH -> operate (Operator opToken (makeExpression [leftValToken]) (makeExpression beforeParenthesis)) afterParenthesis
@@ -104,14 +106,14 @@ makeExpression (leftValToken : opToken : T.LPt : rest)
   | otherwise = error "some kind of error TODO: "
   where
     (beforeParenthesis, afterParenthesis) = separateParenthesis rest
-makeExpression (leftValToken : opToken : rightValToken : rest)
+makeExpression (leftValToken : opToken : rightValToken : rest) -- this makes no sense
   | value leftValToken && value rightValToken && operator opToken =
     case priority opToken of
       LOW -> Operator opToken (makeExpression [leftValToken]) (makeExpression (rightValToken : rest))
       HIGH -> operate (Operator opToken (makeExpression [leftValToken]) (makeExpression [rightValToken])) rest
   | otherwise = error $ "expected value operator value, but got" ++ show leftValToken ++ show opToken ++ show rightValToken
 makeExpression [] = error "Expression expected, but not found"
-makeExpression (token : rest) = error $ "You can't start an expression with: " ++ show token
+makeExpression (token : rest) = error $ "You can't start an expression with: " ++ show token ++ "..." ++ show rest
 
 operate :: Expr -> [T.Token] -> Expr
 operate expr [] = expr
@@ -127,7 +129,7 @@ separateParenthesis = separateCounting 1 0
       | openPt - closePt == 1 && token == T.RPt = ([], [])
       | otherwise = error "Not enough closing parenthesis"
     separateCounting openPt closePt (token : rest)
-      | openPt == closePt = ([], token : rest)
+      | openPt - closePt == 1 && token == T.RPt = ([], rest)
       | openPt > closePt = case token of
         T.LPt -> unite [token] (separateCounting (openPt + 1) closePt rest)
         T.RPt -> unite [token] (separateCounting openPt (closePt + 1) rest)
