@@ -97,7 +97,7 @@ makeExpression :: [T.Token] -> Expr
 makeExpression [T.Val x] = Val x
 makeExpression [T.Var x] = Var x
 makeExpression (T.LPt : rest) = case separateParenthesis rest of
-  (tokens, []) -> makeExpression $ init tokens
+  (tokens, []) -> makeExpression tokens
   (expressionTokens, rest) -> operate (makeExpression expressionTokens) rest
 makeExpression (leftValToken : opToken : T.LPt : rest)
   | value leftValToken && operator opToken = case priority opToken of
