@@ -1,14 +1,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-import Test.QuickCheck
 import Lexer
+import Test.QuickCheck
 
 numToTokens :: Int -> [Token]
 numToTokens x = if x >= 0 then [Val x] else [Sub, Val (abs x)]
 
 strToToken :: String -> Token -- Doesn't work cuz when testing strings like '%' '+' ... they fail.
 strToToken var = Var (trim var)
-    where trim = takeWhile (/= ' ') . dropWhile (== ' ')
+  where
+    trim = takeWhile (/= ' ') . dropWhile (== ' ')
 
 prop_Val :: Int -> Bool
 prop_Val x = getTokens (show x) == numToTokens x
@@ -21,16 +22,17 @@ prop_Add x y = getTokens (show x ++ "+" ++ show y) == numToTokens x ++ [Add] ++ 
 
 prop_Ass :: String -> Int -> Bool
 prop_Ass str x = getTokens (("var" ++ str) ++ " := " ++ show x) == strToToken ("var" ++ str) : Ass : numToTokens x
-    where var = takeWhile (/= ' ') "var" ++ str
+  where
+    var = takeWhile (/= ' ') "var" ++ str
 
 prop_Cond :: Int -> Bool
-prop_Cond x =  getTokens ("if" ++ show x) == Cond : numToTokens x
+prop_Cond x = getTokens ("if" ++ show x) == Cond : numToTokens x
 
 prop_Div :: Int -> Int -> Bool
 prop_Div x y = getTokens (show x ++ "/" ++ show y) == numToTokens x ++ [Div] ++ numToTokens y
 
 prop_Loop :: Int -> Bool
-prop_Loop x =  getTokens ("while" ++ show x) == Loop : numToTokens x
+prop_Loop x = getTokens ("while" ++ show x) == Loop : numToTokens x
 
 prop_Lth :: Int -> Int -> Bool
 prop_Lth x y = getTokens (show x ++ "<" ++ show y) == numToTokens x ++ [Lth] ++ numToTokens y
@@ -47,7 +49,11 @@ prop_Neq x y = getTokens (show x ++ "!=" ++ show y) == numToTokens x ++ [Neq] ++
 prop_Sub :: Int -> Int -> Bool
 prop_Sub x y = getTokens (show x ++ "-" ++ show y) == numToTokens x ++ [Sub] ++ numToTokens y
 
+prop_Print :: String -> Bool
+prop_Print str = getTokens ("print \"" ++ str ++ "\"") == Print : [Var ("\"" ++ show (strToToken str) ++ "\"")]
+
 return []
+
 runTests = $quickCheckAll
 
 main :: IO Bool

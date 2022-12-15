@@ -84,8 +84,12 @@ separateExpressionTokens [valToken]
   | value valToken = ([valToken], [])
   | otherwise = error $ "expected value, but got: " ++ show valToken
 separateExpressionTokens (T.Sub : T.LPt : rest) = unite [T.Sub] (separateExpressionTokens rest)
+separateExpressionTokens (T.LPt : T.Sub : rest) =
+  separateExpressionTokens ((T.LPt : T.Val 0 : [T.Sub] ++ insideParenthesis ++ [T.RPt]) ++ afterParenthesis)
+  where
+    (insideParenthesis, afterParenthesis) = separateParenthesis rest
 separateExpressionTokens (T.Sub : valToken : rest)
-  | value valToken = unite [T.LPt, T.Sub, valToken, T.RPt] (separateExpressionTokens ([T.Add, T.Val 0] ++ rest))
+  | value valToken = separateExpressionTokens ([T.LPt, T.Val 0, T.Sub, valToken, T.RPt] ++ rest) -- fix this...
   | otherwise = error $ "expected value, but got: " ++ show valToken
 separateExpressionTokens (T.LPt : rest) = unite [T.LPt] (separateExpressionTokens rest)
 separateExpressionTokens (T.RPt : rest) = unite [T.RPt] (separateExpressionTokens rest)
@@ -94,7 +98,7 @@ separateExpressionTokens (valToken : T.RPt : opToken : rest) =
     then
       if operator opToken
         then unite [valToken, T.RPt, opToken] (separateExpressionTokens rest)
-        else unite [valToken, T.RPt] (separateExpressionTokens (opToken : rest))
+        else ([valToken, T.RPt], opToken : rest) -- this is flawed
     else error $ "you can't place a ) after " ++ show valToken
 separateExpressionTokens (valToken : T.RPt : rest)
   | value valToken = ([valToken, T.RPt], rest)
@@ -113,9 +117,6 @@ makeExpression [] = error "Expected an expression but got nothing"
 makeExpression (token : rest) = makeExpression' (Left token) rest
 
 makeExpression' :: Either T.Token Expr -> [T.Token] -> Expr
-makeExpression' leftValToken (operator : T.Sub : rest) = makeExpression' leftValToken (operator : T.LPt : T.Sub : nextExpr ++ [T.RPt] ++ restOfExpr)
-  where
-    (nextExpr, restOfExpr) = if value $ head rest then splitAt 1 rest else separateParenthesis $ tail rest
 makeExpression' (Left (T.Val x)) [] = Val x
 makeExpression' (Left (T.Var x)) [] = Var x
 makeExpression' (Left T.Sub) rest = makeExpression' (Right (Val 0)) (T.Sub : rest)
@@ -126,6 +127,11 @@ makeExpression' (Left T.LPt) rest = case separateParenthesis rest of
 makeExpression' leftValToken [opToken, rightValToken]
   | valueOrExpr leftValToken && operator opToken && value rightValToken = Operator opToken (makeExpression' leftValToken []) (makeExpression [rightValToken])
   | otherwise = error $ "malformed operation, should be value operator value, but is: " ++ show leftValToken ++ "..." ++ show opToken ++ " " ++ show rightValToken
+makeExpression' leftValToken (opToken : T.Sub : rest)
+  | valueOrExpr leftValToken && operator opToken = makeExpression' leftValToken (opToken : T.LPt : T.Sub : nextExpr ++ [T.RPt] ++ restOfExpr)
+  | otherwise = error "TODO : HERE"
+  where
+    (nextExpr, restOfExpr) = if value $ head rest then splitAt 1 rest else separateParenthesis $ tail rest
 makeExpression' leftValToken (leftOpToken : T.LPt : rest)
   | valueOrExpr leftValToken && operator leftOpToken =
     case maybeRightOpToken of
@@ -134,7 +140,7 @@ makeExpression' leftValToken (leftOpToken : T.LPt : rest)
           then makeExpression' (Right (Operator leftOpToken (makeExpression' leftValToken []) (makeExpression insideParenthesis))) afterParenthesis
           else Operator leftOpToken (makeExpression' leftValToken []) (makeExpression (T.LPt : rest))
       Nothing -> Operator leftOpToken (makeExpression' leftValToken []) (makeExpression insideParenthesis)
-  | otherwise = error "some kind of error TODO: "
+  | otherwise = error $ "some kind of error TODO: " ++ show leftOpToken ++ " ) " ++ show maybeRightOpToken ++ " " ++ show rest
   where
     (insideParenthesis, afterParenthesis) = separateParenthesis rest
     maybeRightOpToken = if afterParenthesis /= [] then Just (head afterParenthesis) else Nothing
