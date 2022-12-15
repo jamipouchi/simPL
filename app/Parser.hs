@@ -81,7 +81,12 @@ extractExpression tokens = (expression, rest)
     (expressionTokens, rest) = separateExpressionTokens tokens
     expression = makeExpression expressionTokens
 
+-- separateExpressionTokens expr
+-- ([Val 3,Mul,LPt,Val 4,Add,Val 2,RPt,Mul,Val 3,Add,LPt,Val 2,Add,Val 3,RPt,Mul],[Val 4])
 separateExpressionTokens :: [T.Token] -> ([T.Token], [T.Token])
+separateExpressionTokens [valToken]
+  | value valToken = ([valToken], [])
+  | otherwise = error $ "expected value, but got: " ++ show valToken
 separateExpressionTokens (T.LPt : rest) = unite [T.LPt] (separateExpressionTokens rest)
 separateExpressionTokens (T.RPt : rest) = unite [T.RPt] (separateExpressionTokens rest)
 separateExpressionTokens (valToken : T.RPt : opToken : rest) =
@@ -91,10 +96,9 @@ separateExpressionTokens (valToken : T.RPt : opToken : rest) =
         then unite [valToken, T.RPt, opToken] (separateExpressionTokens rest)
         else unite [valToken, T.RPt] (separateExpressionTokens (opToken : rest))
     else error $ "you can't place a ) after " ++ show valToken
-separateExpressionTokens (valToken : opToken : rest) =
-  if operator opToken && value valToken
-    then unite [valToken, opToken] (separateExpressionTokens rest)
-    else ([valToken], opToken : rest)
+separateExpressionTokens (valToken : opToken : rest)
+  | operator opToken && value valToken = unite [valToken, opToken] (separateExpressionTokens rest)
+  | otherwise = ([], valToken : opToken : rest)
 separateExpressionTokens tokens = ([], tokens)
 
 unite :: [T.Token] -> ([T.Token], [T.Token]) -> ([T.Token], [T.Token])
