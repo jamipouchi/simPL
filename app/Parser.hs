@@ -12,7 +12,10 @@ operator T.Neq = True
 operator T.Lth = True
 operator _ = False
 
-data Priority = HIGH | LOW
+data Priority = HIGH | LOW deriving (Enum, Show, Eq)
+
+instance Ord Priority where
+  compare left right = compare (fromEnum right) (fromEnum left)
 
 priority :: T.Token -> Priority
 priority T.Add = LOW
@@ -24,6 +27,10 @@ value token = case token of
   T.Val x -> True
   T.Var x -> True
   _ -> False
+
+valueOrExpr :: Either T.Token Expr -> Bool
+valueOrExpr (Right _) = True
+valueOrExpr (Left val) = value val
 
 -- | Expressions in SimpleLp. Can be evaluated to return a Maybe Int
 data Expr
@@ -93,33 +100,42 @@ separateExpressionTokens tokens = ([], tokens)
 unite :: [T.Token] -> ([T.Token], [T.Token]) -> ([T.Token], [T.Token])
 unite iniExpr (restExpr, restTokens) = (iniExpr ++ restExpr, restTokens)
 
+someFunc :: Either T.Token Expr -> Int
+someFunc a = 2
+
 makeExpression :: [T.Token] -> Expr
-makeExpression [T.Val x] = Val x
-makeExpression [T.Var x] = Var x
-makeExpression (T.LPt : rest) = case separateParenthesis rest of
+makeExpression [] = error "Expected an expression but got nothing"
+makeExpression (token : rest) = makeExpression' (Left token) rest
+
+makeExpression' :: Either T.Token Expr -> [T.Token] -> Expr
+makeExpression' (Left (T.Val x)) [] = Val x
+makeExpression' (Left (T.Var x)) [] = Var x
+makeExpression' (Right expr) [] = expr
+makeExpression' (Left T.LPt) rest = case separateParenthesis rest of
   (tokens, []) -> makeExpression tokens
-  (expressionTokens, rest) -> operate (makeExpression expressionTokens) rest
-makeExpression (leftValToken : opToken : T.LPt : rest)
-  | value leftValToken && operator opToken = case priority opToken of
-    HIGH -> operate (Operator opToken (makeExpression [leftValToken]) (makeExpression beforeParenthesis)) afterParenthesis
-    LOW -> Operator opToken (makeExpression [leftValToken]) (operate (makeExpression beforeParenthesis) afterParenthesis)
+  (expressionTokens, rest) -> makeExpression' (Right (makeExpression expressionTokens)) rest
+makeExpression' leftValToken [opToken, rightValToken]
+  | valueOrExpr leftValToken && operator opToken && value rightValToken = Operator opToken (makeExpression' leftValToken []) (makeExpression [rightValToken])
+  | otherwise = error $ "malformed operation, should be value operator value, but is: " ++ show leftValToken ++ show opToken ++ show rightValToken
+makeExpression' leftValToken (leftOpToken : T.LPt : rest)
+  | valueOrExpr leftValToken && operator leftOpToken =
+    case maybeRightOpToken of
+      Just rightOpToken ->
+        if priority leftOpToken >= priority rightOpToken
+          then makeExpression' (Right (Operator leftOpToken (makeExpression' leftValToken []) (makeExpression insideParenthesis))) afterParenthesis
+          else Operator leftOpToken (makeExpression' leftValToken []) (makeExpression (T.LPt : rest))
+      Nothing -> Operator leftOpToken (makeExpression' leftValToken []) (makeExpression insideParenthesis)
   | otherwise = error "some kind of error TODO: "
   where
-    (beforeParenthesis, afterParenthesis) = separateParenthesis rest
-makeExpression (leftValToken : opToken : rightValToken : rest) -- this makes no sense
-  | value leftValToken && value rightValToken && operator opToken =
-    case priority opToken of
-      LOW -> Operator opToken (makeExpression [leftValToken]) (makeExpression (rightValToken : rest))
-      HIGH -> operate (Operator opToken (makeExpression [leftValToken]) (makeExpression [rightValToken])) rest
-  | otherwise = error $ "expected value operator value, but got" ++ show leftValToken ++ show opToken ++ show rightValToken
-makeExpression [] = error "Expression expected, but not found"
-makeExpression (token : rest) = error $ "You can't start an expression with: " ++ show token ++ "..." ++ show rest
-
-operate :: Expr -> [T.Token] -> Expr
-operate expr [] = expr
-operate expr (opToken : rest)
-  | operator opToken = Operator opToken expr (makeExpression rest)
-  | otherwise = error $ "operator expected, but got: " ++ show opToken
+    (insideParenthesis, afterParenthesis) = separateParenthesis rest
+    maybeRightOpToken = if afterParenthesis /= [] then Just (head afterParenthesis) else Nothing
+makeExpression' leftValToken (leftOpToken : rightValToken : rightOpToken : rest)
+  | valueOrExpr leftValToken && value rightValToken && operator leftOpToken && operator rightOpToken =
+    if priority leftOpToken >= priority rightOpToken
+      then makeExpression' (Right (Operator leftOpToken (makeExpression' leftValToken []) (makeExpression [rightValToken]))) (rightOpToken : rest)
+      else Operator leftOpToken (makeExpression' leftValToken []) (makeExpression (rightValToken : rightOpToken : rest))
+  | otherwise = error $ "expected value operator value, but got" ++ show leftValToken ++ show leftOpToken ++ show rightValToken
+makeExpression' token rest = error $ "You can't start an expression with: " ++ show token ++ "..." ++ show rest
 
 separateParenthesis :: [T.Token] -> ([T.Token], [T.Token])
 separateParenthesis = separateCounting 1 0
