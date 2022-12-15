@@ -41,22 +41,14 @@ tokens =
     ("print", Print)
   ]
 
--- -- Space is 32, } is 125. So we accept chars >= 32 and <= 125
--- This is the function to use. Prob will be moved to main
-fileToString :: IO ()
-fileToString = do
-  input <- readFile "test.txt"
-  let content = filter (\c -> fromEnum c >= 32 && fromEnum c <= 125) input
-  print $ getTokens content
-
 -- | Entry point to use the lexer
 getTokens :: String -> [Token]
 getTokens str = lexer str ""
 
--- | Given a string, returns a list of Token. It throws no errors, as he accepts anything for variable names. TODO: fix that
+-- | Given a string, returns a list of Token.
 lexer :: String -> String -> [Token]
 lexer "" w = [] -- FIXME
-lexer (' ' : cs) w = lexer cs w
+lexer (' ' : cs) w = if w == "" then lexer cs w else error $ "Space found, but no token could be formed with " ++ show w
 lexer (c : cs) w = case getToken (w ++ [c]) of
   (Just token, True) -> token : lexer cs ""
   (Nothing, True) -> lexer cs (w ++ [c])
@@ -77,7 +69,8 @@ extractString :: String -> (Token, String)
 extractString = separate ""
   where
     separate :: String -> String -> (Token, String)
-    separate var "" = (Var (trim var), "")
+    separate var "" = (Var var, "")
+    separate var (' ' : token) = (Var var, token)
     separate var (r : token) =
       if any (\(str, _) -> isPrefixTo (r : token) str) tokens
         then (Var (trim var), r : token)

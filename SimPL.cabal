@@ -92,3 +92,10 @@ Test-Suite Lexer
     build-depends:  base, QuickCheck
     hs-source-dirs: tests, app
     other-modules:  Lexer, LookUpTable
+
+Test-Suite Parser
+    type:           exitcode-stdio-1.0
+    main-is:        Parser-test.hs
+    build-depends:  base, QuickCheck
+    hs-source-dirs: tests, app
+    other-modules:  Lexer, LookUpTable, SimpleLP

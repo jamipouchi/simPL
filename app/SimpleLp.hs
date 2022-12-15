@@ -47,12 +47,12 @@ exec (Seq []) lut = exec NoOp lut
 exec (Seq (instr : instrs)) lut = do
   updatedLut <- exec instr lut
   exec (Seq instrs) updatedLut
-exec (Cond expr instr1 instr2) lut = exec correctInstr lut
+exec (Cond expr instr) lut = exec correctInstr lut
   where
     correctInstr = case eval expr lut of
-      Just val -> if val /= 0 then instr1 else instr2
+      Just val -> if val /= 0 then instr else NoOp
       Nothing -> error $ "condition unevaluatable (i don't think that word exists)" ++ show expr
-exec (Loop expr body) lut = exec (Cond expr body_and_repeat NoOp) lut
+exec (Loop expr body) lut = exec (Cond expr body_and_repeat) lut
   where
     body_and_repeat = Seq [body, Loop expr body]
 exec (Print expr) lut = do

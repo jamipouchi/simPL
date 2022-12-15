@@ -1,6 +1,6 @@
 module Parser (Expr (..), Instr (..), tokensToInstr) where
 
-import qualified Lexer as T (Token (..))
+import qualified Lexer as T (Token (..), getTokens)
 
 operator :: T.Token -> Bool
 operator T.Add = True
@@ -24,8 +24,8 @@ priority _ = HIGH
 
 value :: T.Token -> Bool
 value token = case token of
-  T.Val x -> True
-  T.Var x -> True
+  T.Val _ -> True
+  T.Var _ -> True
   _ -> False
 
 valueOrExpr :: Either T.Token Expr -> Bool
@@ -39,16 +39,11 @@ data Expr
   | Operator T.Token Expr Expr
   deriving (Show)
 
-mkOperation :: T.Token -> Expr -> Expr -> Expr
-mkOperation token exprL exprR
-  | operator token = Operator token exprL exprR
-  | otherwise = error "token must be an operator"
-
 -- | Instructions in SimpleLP. Can be executed to return a LookUpTable
 data Instr
   = Ass String Expr
   | Seq [Instr]
-  | Cond Expr Instr Instr
+  | Cond Expr Instr
   | Loop Expr Instr
   | Print Expr
   | NoOp
@@ -60,10 +55,10 @@ tokensToInstr (T.Var var : T.Ass : tokens) = Ass var expr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     restOfInstr = tokensToInstr restOfTokens
-tokensToInstr (T.Cond : tokens) = Cond expr instr1 instr2 : restOfInstr
+tokensToInstr (T.Cond : tokens) = Cond expr instr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
-    (instr1 : instr2 : restOfInstr) = tokensToInstr restOfTokens
+    (instr : restOfInstr) = tokensToInstr restOfTokens
 tokensToInstr (T.Loop : tokens) = Loop expr instr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
@@ -72,7 +67,7 @@ tokensToInstr (T.Print : tokens) = Print expr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     restOfInstr = tokensToInstr restOfTokens
-tokensToInstr (t1 : _) = error $ "error on token: " ++ show t1
+tokensToInstr (t1 : rest) = error $ "error on token: " ++ show t1 ++ " " ++ show rest
 
 extractExpression :: [T.Token] -> (Expr, [T.Token])
 -- an expression is value operator, value operator ... so when this breaks, we have finished
@@ -81,11 +76,16 @@ extractExpression tokens = (expression, rest)
     (expressionTokens, rest) = separateExpressionTokens tokens
     expression = makeExpression expressionTokens
 
--- separateExpressionTokens expr
+-- separateExpressionTokens expr this fails with (-...)
 -- ([Val 3,Mul,LPt,Val 4,Add,Val 2,RPt,Mul,Val 3,Add,LPt,Val 2,Add,Val 3,RPt,Mul],[Val 4])
 separateExpressionTokens :: [T.Token] -> ([T.Token], [T.Token])
+separateExpressionTokens [T.RPt] = ([T.RPt], [])
 separateExpressionTokens [valToken]
   | value valToken = ([valToken], [])
+  | otherwise = error $ "expected value, but got: " ++ show valToken
+separateExpressionTokens (T.Sub : T.LPt : rest) = unite [T.Sub] (separateExpressionTokens rest)
+separateExpressionTokens (T.Sub : valToken : rest)
+  | value valToken = unite [T.LPt, T.Sub, valToken, T.RPt] (separateExpressionTokens ([T.Add, T.Val 0] ++ rest))
   | otherwise = error $ "expected value, but got: " ++ show valToken
 separateExpressionTokens (T.LPt : rest) = unite [T.LPt] (separateExpressionTokens rest)
 separateExpressionTokens (T.RPt : rest) = unite [T.RPt] (separateExpressionTokens rest)
@@ -96,31 +96,36 @@ separateExpressionTokens (valToken : T.RPt : opToken : rest) =
         then unite [valToken, T.RPt, opToken] (separateExpressionTokens rest)
         else unite [valToken, T.RPt] (separateExpressionTokens (opToken : rest))
     else error $ "you can't place a ) after " ++ show valToken
+separateExpressionTokens (valToken : T.RPt : rest)
+  | value valToken = ([valToken, T.RPt], rest)
+  | otherwise = error $ "expected value, but got" ++ show valToken
 separateExpressionTokens (valToken : opToken : rest)
   | operator opToken && value valToken = unite [valToken, opToken] (separateExpressionTokens rest)
+  | value valToken = ([valToken], opToken : rest)
   | otherwise = ([], valToken : opToken : rest)
 separateExpressionTokens tokens = ([], tokens)
 
 unite :: [T.Token] -> ([T.Token], [T.Token]) -> ([T.Token], [T.Token])
 unite iniExpr (restExpr, restTokens) = (iniExpr ++ restExpr, restTokens)
 
-someFunc :: Either T.Token Expr -> Int
-someFunc a = 2
-
 makeExpression :: [T.Token] -> Expr
 makeExpression [] = error "Expected an expression but got nothing"
 makeExpression (token : rest) = makeExpression' (Left token) rest
 
 makeExpression' :: Either T.Token Expr -> [T.Token] -> Expr
+makeExpression' leftValToken (operator : T.Sub : rest) = makeExpression' leftValToken (operator : T.LPt : T.Sub : nextExpr ++ [T.RPt] ++ restOfExpr)
+  where
+    (nextExpr, restOfExpr) = if value $ head rest then splitAt 1 rest else separateParenthesis $ tail rest
 makeExpression' (Left (T.Val x)) [] = Val x
 makeExpression' (Left (T.Var x)) [] = Var x
+makeExpression' (Left T.Sub) rest = makeExpression' (Right (Val 0)) (T.Sub : rest)
 makeExpression' (Right expr) [] = expr
 makeExpression' (Left T.LPt) rest = case separateParenthesis rest of
   (tokens, []) -> makeExpression tokens
-  (expressionTokens, rest) -> makeExpression' (Right (makeExpression expressionTokens)) rest
+  (expressionTokens, restOfTokens) -> makeExpression' (Right (makeExpression expressionTokens)) restOfTokens
 makeExpression' leftValToken [opToken, rightValToken]
   | valueOrExpr leftValToken && operator opToken && value rightValToken = Operator opToken (makeExpression' leftValToken []) (makeExpression [rightValToken])
-  | otherwise = error $ "malformed operation, should be value operator value, but is: " ++ show leftValToken ++ show opToken ++ show rightValToken
+  | otherwise = error $ "malformed operation, should be value operator value, but is: " ++ show leftValToken ++ "..." ++ show opToken ++ " " ++ show rightValToken
 makeExpression' leftValToken (leftOpToken : T.LPt : rest)
   | valueOrExpr leftValToken && operator leftOpToken =
     case maybeRightOpToken of
@@ -138,8 +143,10 @@ makeExpression' leftValToken (leftOpToken : rightValToken : rightOpToken : rest)
     if priority leftOpToken >= priority rightOpToken
       then makeExpression' (Right (Operator leftOpToken (makeExpression' leftValToken []) (makeExpression [rightValToken]))) (rightOpToken : rest)
       else Operator leftOpToken (makeExpression' leftValToken []) (makeExpression (rightValToken : rightOpToken : rest))
-  | otherwise = error $ "expected value operator value, but got" ++ show leftValToken ++ show leftOpToken ++ show rightValToken
-makeExpression' token rest = error $ "You can't start an expression with: " ++ show token ++ "..." ++ show rest
+  | otherwise = error $ "expected value operator value, but got: " ++ show leftValToken ++ "..." ++ show leftOpToken ++ " " ++ show rightValToken
+makeExpression' instr1 rest = error $ "You can't start an expression with: " ++ "..." ++ show rest
+
+-- uuuh we need the handle -expr...
 
 separateParenthesis :: [T.Token] -> ([T.Token], [T.Token])
 separateParenthesis = separateCounting 1 0
@@ -156,3 +163,5 @@ separateParenthesis = separateCounting 1 0
         _ -> unite [token] (separateCounting openPt closePt rest)
       | otherwise = error "Too much closing parenthesis"
     separateCounting _ _ [] = error "Couln't match parenthesis"
+
+getTokens = T.getTokens
