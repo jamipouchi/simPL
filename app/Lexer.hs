@@ -15,6 +15,7 @@ data Token
   | RPt
   | LCu
   | RCu
+  | Quo
   | Ass
   | Cond
   | Loop
@@ -36,6 +37,7 @@ tokens =
     (")", RPt),
     ("{", LCu),
     ("}", RCu),
+    ("\"", Quo),
     (":=", Ass),
     ("if", Cond),
     ("while", Loop),

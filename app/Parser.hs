@@ -47,20 +47,20 @@ data Instr
   | Seq [Instr]
   | Cond Expr Instr
   | Loop Expr Instr
-  | Print Expr
+  | Print (Either Expr String)
   | NoOp
   deriving (Show)
 
--- | the main function. TODO: document 
+-- | the main function. TODO: document
 tokensToInstr :: [T.Token] -> [Instr]
 tokensToInstr [] = []
 tokensToInstr (T.Var var : T.Ass : tokens) = Ass var expr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     restOfInstr = tokensToInstr restOfTokens
-tokensToInstr (T.LCu : rest) = Seq (tokensToInstr insideParenthesis) : tokensToInstr afterParenthesis
+tokensToInstr (T.LCu : tokens) = Seq (tokensToInstr insideParenthesis) : tokensToInstr afterParenthesis
   where
-    (insideParenthesis, afterParenthesis) = separateParenthesis T.LCu rest
+    (insideParenthesis, afterParenthesis) = separateParenthesis T.LCu tokens
 tokensToInstr (T.Cond : tokens) = Cond expr instr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
@@ -69,10 +69,23 @@ tokensToInstr (T.Loop : tokens) = Loop expr instr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     (instr : restOfInstr) = tokensToInstr restOfTokens
-tokensToInstr (T.Print : tokens) = Print expr : restOfInstr
+tokensToInstr (T.Print : T.LPt : tokens) = Print (Left expr) : tokensToInstr afterParenthesis
   where
-    (expr, restOfTokens) = extractExpression tokens
-    restOfInstr = tokensToInstr restOfTokens
+    (insideParenthesis, afterParenthesis) = separateParenthesis T.LPt tokens
+    expr = makeExpression insideParenthesis
+tokensToInstr (T.Print : T.Quo : tokens) = Print (Right text) : tokensToInstr afterQuo
+  where
+    (insideQuo, afterQuo) = separateParenthesis T.Quo tokens
+    text =
+      foldl
+        ( \str token ->
+            str ++ case token of
+              T.Var var -> var
+              other -> show other
+        )
+        ""
+        insideQuo
+tokensToInstr (T.Print : _) = error "you need to place what you print inside parenthesis!"
 -- to extend to accept for a..b
 tokensToInstr (t1 : rest) = error $ "error on token: " ++ show t1 ++ " " ++ show rest
 
@@ -115,6 +128,12 @@ separateExpressionTokens tokens = ([], tokens)
 
 unite :: [T.Token] -> ([T.Token], [T.Token]) -> ([T.Token], [T.Token])
 unite iniExpr (restExpr, restTokens) = (iniExpr ++ restExpr, restTokens)
+
+separateAllExpressions :: [T.Token] -> [[T.Token]]
+separateAllExpressions [] = []
+separateAllExpressions tokens = expr : separateAllExpressions rest
+  where
+    (expr, rest) = separateExpressionTokens tokens
 
 makeExpression :: [T.Token] -> Expr
 makeExpression [] = error "Expected an expression but got nothing"

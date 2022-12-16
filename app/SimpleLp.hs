@@ -9,11 +9,7 @@ import Parser
 eval :: Expr -> LookUpTable -> IO (Maybe Int)
 eval (Val x) _ = return $ Just x
 eval (Var key) lut = return $ get lut key
-eval Read _ = do
-  num <- getContents
-  if all isDigit num
-    then return $ Just (read num :: Int)
-    else return Nothing
+eval Read _ = readNum
 eval (Operator Add expr1 expr2) lut = safeEval (+) expr1 (const True) expr2 (const True) lut
 eval (Operator Sub expr1 expr2) lut = safeEval (-) expr1 (const True) expr2 (const True) lut
 eval (Operator Mul expr1 expr2) lut = safeEval (*) expr1 (const True) expr2 (const True) lut
@@ -24,8 +20,13 @@ eval (Operator Neq expr1 expr2) lut = b2i $ eval' (/=) expr1 expr2 lut
 eval (Operator Lth expr1 expr2) lut = b2i $ eval' (<) expr1 expr2 lut
 eval _ _ = error "unreachable"
 
-isDigit :: Char -> Bool
-isDigit c = c >= '0' && c <= '9'
+readNum :: IO (Maybe Int)
+readNum = do
+  num <- getContents
+  if all isDigit num then return $ Just (read num :: Int) else return Nothing
+  where
+    isDigit :: Char -> Bool
+    isDigit c = c >= '0' && c <= '9'
 
 safeEval :: (Int -> Int -> Int) -> Expr -> (Int -> Bool) -> Expr -> (Int -> Bool) -> LookUpTable -> IO (Maybe Int)
 safeEval op expr1 cond1 expr2 cond2 lut = do
@@ -74,9 +75,12 @@ exec (Cond expr instr) lut = do
 exec (Loop expr body) lut = exec (Cond expr body_and_repeat) lut
   where
     body_and_repeat = Seq [body, Loop expr body]
-exec (Print expr) lut = do
-  res <- eval expr lut
-  case res of
-    Nothing -> putStrLn "> nothing"
-    Just x -> putStrLn $ "> " ++ show x
+exec (Print toPrint) lut = do
+  case toPrint of
+    Left expr -> do
+      res <- eval expr lut
+      print res
+    Right str -> putStrLn str
   return lut
+
+-- I have to rething the whole thing.
