@@ -19,6 +19,7 @@ data Token
   | Cond
   | Loop
   | Print
+  | Read
   deriving (Eq, Show)
 
 -- | The mapping from string -> Token. (This prob can be done better)
@@ -38,7 +39,8 @@ tokens =
     (":=", Ass),
     ("if", Cond),
     ("while", Loop),
-    ("print", Print)
+    ("print", Print),
+    ("readNum", Read)
   ]
 
 -- | Entry point to use the lexer

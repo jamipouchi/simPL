@@ -26,6 +26,7 @@ value :: T.Token -> Bool
 value token = case token of
   T.Val _ -> True
   T.Var _ -> True
+  T.Read -> True
   _ -> False
 
 valueOrExpr :: Either T.Token Expr -> Bool
@@ -37,6 +38,7 @@ data Expr
   = Val Int
   | Var String
   | Operator T.Token Expr Expr
+  | Read
   deriving (Show)
 
 -- | Instructions in SimpleLP. Can be executed to return a LookUpTable
@@ -49,12 +51,16 @@ data Instr
   | NoOp
   deriving (Show)
 
+-- | the main function. TODO: document 
 tokensToInstr :: [T.Token] -> [Instr]
 tokensToInstr [] = []
 tokensToInstr (T.Var var : T.Ass : tokens) = Ass var expr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     restOfInstr = tokensToInstr restOfTokens
+tokensToInstr (T.LCu : rest) = Seq (tokensToInstr insideParenthesis) : tokensToInstr afterParenthesis
+  where
+    (insideParenthesis, afterParenthesis) = separateParenthesis T.LCu rest
 tokensToInstr (T.Cond : tokens) = Cond expr instr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
@@ -67,17 +73,15 @@ tokensToInstr (T.Print : tokens) = Print expr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     restOfInstr = tokensToInstr restOfTokens
+-- to extend to accept for a..b
 tokensToInstr (t1 : rest) = error $ "error on token: " ++ show t1 ++ " " ++ show rest
 
 extractExpression :: [T.Token] -> (Expr, [T.Token])
--- an expression is value operator, value operator ... so when this breaks, we have finished
 extractExpression tokens = (expression, rest)
   where
     (expressionTokens, rest) = separateExpressionTokens tokens
     expression = makeExpression expressionTokens
 
--- separateExpressionTokens expr this fails with (-...)
--- ([Val 3,Mul,LPt,Val 4,Add,Val 2,RPt,Mul,Val 3,Add,LPt,Val 2,Add,Val 3,RPt,Mul],[Val 4])
 separateExpressionTokens :: [T.Token] -> ([T.Token], [T.Token])
 separateExpressionTokens [T.RPt] = ([T.RPt], [])
 separateExpressionTokens [valToken]
@@ -87,7 +91,7 @@ separateExpressionTokens (T.Sub : T.LPt : rest) = unite [T.Sub] (separateExpress
 separateExpressionTokens (T.LPt : T.Sub : rest) =
   separateExpressionTokens ((T.LPt : T.Val 0 : [T.Sub] ++ insideParenthesis ++ [T.RPt]) ++ afterParenthesis)
   where
-    (insideParenthesis, afterParenthesis) = separateParenthesis rest
+    (insideParenthesis, afterParenthesis) = separateParenthesis T.LPt rest
 separateExpressionTokens (T.Sub : valToken : rest)
   | value valToken = separateExpressionTokens ([T.LPt, T.Val 0, T.Sub, valToken, T.RPt] ++ rest) -- fix this...
   | otherwise = error $ "expected value, but got: " ++ show valToken
@@ -98,8 +102,8 @@ separateExpressionTokens (valToken : T.RPt : opToken : rest) =
     then
       if operator opToken
         then unite [valToken, T.RPt, opToken] (separateExpressionTokens rest)
-        else ([valToken, T.RPt], opToken : rest) -- this is flawed
-    else error $ "you can't place a ) after " ++ show valToken
+        else ([valToken, T.RPt], opToken : rest)
+    else error $ "you can't place a ')' after " ++ show valToken
 separateExpressionTokens (valToken : T.RPt : rest)
   | value valToken = ([valToken, T.RPt], rest)
   | otherwise = error $ "expected value, but got" ++ show valToken
@@ -119,9 +123,10 @@ makeExpression (token : rest) = makeExpression' (Left token) rest
 makeExpression' :: Either T.Token Expr -> [T.Token] -> Expr
 makeExpression' (Left (T.Val x)) [] = Val x
 makeExpression' (Left (T.Var x)) [] = Var x
+makeExpression' (Left T.Read) [] = Read
 makeExpression' (Left T.Sub) rest = makeExpression' (Right (Val 0)) (T.Sub : rest)
 makeExpression' (Right expr) [] = expr
-makeExpression' (Left T.LPt) rest = case separateParenthesis rest of
+makeExpression' (Left T.LPt) rest = case separateParenthesis T.LPt rest of
   (tokens, []) -> makeExpression tokens
   (expressionTokens, restOfTokens) -> makeExpression' (Right (makeExpression expressionTokens)) restOfTokens
 makeExpression' leftValToken [opToken, rightValToken]
@@ -131,7 +136,7 @@ makeExpression' leftValToken (opToken : T.Sub : rest)
   | valueOrExpr leftValToken && operator opToken = makeExpression' leftValToken (opToken : T.LPt : T.Sub : nextExpr ++ [T.RPt] ++ restOfExpr)
   | otherwise = error "TODO : HERE"
   where
-    (nextExpr, restOfExpr) = if value $ head rest then splitAt 1 rest else separateParenthesis $ tail rest
+    (nextExpr, restOfExpr) = if value $ head rest then splitAt 1 rest else separateParenthesis (head rest) (tail rest)
 makeExpression' leftValToken (leftOpToken : T.LPt : rest)
   | valueOrExpr leftValToken && operator leftOpToken =
     case maybeRightOpToken of
@@ -142,7 +147,7 @@ makeExpression' leftValToken (leftOpToken : T.LPt : rest)
       Nothing -> Operator leftOpToken (makeExpression' leftValToken []) (makeExpression insideParenthesis)
   | otherwise = error $ "some kind of error TODO: " ++ show leftOpToken ++ " ) " ++ show maybeRightOpToken ++ " " ++ show rest
   where
-    (insideParenthesis, afterParenthesis) = separateParenthesis rest
+    (insideParenthesis, afterParenthesis) = separateParenthesis T.LPt rest
     maybeRightOpToken = if afterParenthesis /= [] then Just (head afterParenthesis) else Nothing
 makeExpression' leftValToken (leftOpToken : rightValToken : rightOpToken : rest)
   | valueOrExpr leftValToken && value rightValToken && operator leftOpToken && operator rightOpToken =
@@ -152,22 +157,35 @@ makeExpression' leftValToken (leftOpToken : rightValToken : rightOpToken : rest)
   | otherwise = error $ "expected value operator value, but got: " ++ show leftValToken ++ "..." ++ show leftOpToken ++ " " ++ show rightValToken
 makeExpression' instr1 rest = error $ "You can't start an expression with: " ++ "..." ++ show rest
 
--- uuuh we need the handle -expr...
-
-separateParenthesis :: [T.Token] -> ([T.Token], [T.Token])
-separateParenthesis = separateCounting 1 0
+separateParenthesis :: T.Token -> [T.Token] -> ([T.Token], [T.Token])
+separateParenthesis parenthesis = separateCounting (getOpen parenthesis) (getClose parenthesis) 1 0
   where
-    separateCounting :: Int -> Int -> [T.Token] -> ([T.Token], [T.Token])
-    separateCounting openPt closePt [token]
-      | openPt - closePt == 1 && token == T.RPt = ([], [])
+    separateCounting :: T.Token -> T.Token -> Int -> Int -> [T.Token] -> ([T.Token], [T.Token])
+    separateCounting lParent rParent openPt closePt [token]
+      | openPt - closePt == 1 && token == rParent = ([], [])
       | otherwise = error "Not enough closing parenthesis"
-    separateCounting openPt closePt (token : rest)
-      | openPt - closePt == 1 && token == T.RPt = ([], rest)
-      | openPt > closePt = case token of
-        T.LPt -> unite [token] (separateCounting (openPt + 1) closePt rest)
-        T.RPt -> unite [token] (separateCounting openPt (closePt + 1) rest)
-        _ -> unite [token] (separateCounting openPt closePt rest)
+    separateCounting lParent rParent openPt closePt (token : rest)
+      | openPt - closePt == 1 && token == rParent = ([], rest)
+      | openPt > closePt =
+        if token == lParent
+          then unite [token] (separateCounting lParent rParent (openPt + 1) closePt rest)
+          else
+            if token == rParent
+              then unite [token] (separateCounting lParent rParent openPt (closePt + 1) rest)
+              else unite [token] (separateCounting lParent rParent openPt closePt rest)
       | otherwise = error "Too much closing parenthesis"
-    separateCounting _ _ [] = error "Couln't match parenthesis"
+    separateCounting _ _ _ _ [] = error "Couln't match parenthesis"
+    getOpen :: T.Token -> T.Token
+    getOpen T.LPt = T.LPt
+    getOpen T.RPt = T.LPt
+    getOpen T.LCu = T.LCu
+    getOpen T.RCu = T.LCu
+    getOpen nonParent = error $ "expected a parenthesis, but got: " ++ show nonParent
+    getClose :: T.Token -> T.Token
+    getClose T.LPt = T.RPt
+    getClose T.RPt = T.RPt
+    getClose T.LCu = T.RCu
+    getClose T.RCu = T.RCu
+    getClose nonParent = error $ "expected a parenthesis, but got: " ++ show nonParent
 
 getTokens = T.getTokens

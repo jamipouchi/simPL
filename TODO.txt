@@ -1,6 +1,5 @@
--> implement booleans // Really¿?
--> print (expressions de moment, una o mes)
+-> print (expressions de moment, una o mes)) // look at how to print strings
 -> read (enters de moment)
 -> instrucció for (i := a..b)
-
--> generate AST from input :)
+    -> this desugars to i := 0 Loop (i < b) seq [{
+    }, i <- i + 1]
