@@ -62,10 +62,10 @@ executable SimPL
     import:           warnings
 
     -- .hs or .lhs file containing the Main module.
-    main-is:          SimpleLp.hs
+    main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules:    LookUpTable
+    other-modules:    LookUpTable Lexer Parser Interpreter
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -79,12 +79,12 @@ executable SimPL
     -- Base language which the package is written in.
     default-language: Haskell2010
 
-Test-Suite simPL
+Test-Suite Interpreter
     type:           exitcode-stdio-1.0
-    main-is:        SimPL-test.hs
+    main-is:        Interpreter-test.hs
     build-depends:  base, QuickCheck
     hs-source-dirs: tests, app
-    other-modules:  SimpleLP, LookUpTable
+    other-modules:  Interpreter, LookUpTable, Lexer, Parser
 
 Test-Suite Lexer
     type:           exitcode-stdio-1.0
@@ -98,4 +98,4 @@ Test-Suite Parser
     main-is:        Parser-test.hs
     build-depends:  base, QuickCheck
     hs-source-dirs: tests, app
-    other-modules:  Lexer, LookUpTable, SimpleLP
+    other-modules:  LookUpTable, Lexer, Parser, Interpreter

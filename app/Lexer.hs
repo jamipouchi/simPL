@@ -4,6 +4,7 @@ module Lexer (Token (..), getTokens) where
 data Token
   = Val Int
   | Var String
+  | Str String
   | Add
   | Sub
   | Mul
@@ -23,7 +24,7 @@ data Token
   | Read
   deriving (Eq, Show)
 
--- | The mapping from string -> Token. (This prob can be done better)
+-- | The mapping from string -> Token
 tokens :: [([Char], Token)]
 tokens =
   [ ("+", Add),
@@ -49,38 +50,51 @@ tokens =
 getTokens :: String -> [Token]
 getTokens str = lexer str ""
 
--- | Given a string, returns a list of Token.
+-- | Given a string, and the current parsed word, returns a list of Token.
 lexer :: String -> String -> [Token]
-lexer "" w = [] -- FIXME
-lexer (' ' : cs) w = if w == "" then lexer cs w else error $ "Space found, but no token could be formed with " ++ show w
-lexer (c : cs) w = case getToken (w ++ [c]) of
-  (Just token, True) -> token : lexer cs ""
-  (Nothing, True) -> lexer cs (w ++ [c])
-  (Nothing, False) -> token : lexer remaining ""
-    where
-      (token, remaining) = if isDigit c && w == "" then extractInt (c : cs) else extractString (w ++ c : cs)
-  (Just token, False) -> error "unreachable" -- getToken does not return this ever
+lexer "" _ = []
+lexer (' ' : cs) w =
+  if w == ""
+    then lexer cs w
+    else Var w : lexer cs ""
+lexer ('"' : cs) w =
+  if w == ""
+    then string : lexer afterQuo ""
+    else error $ "started string, but there was no token before, found: " ++ show w
+  where
+    (string, afterQuo) = extractString cs
+lexer (c : cs) w =
+  case getToken (w ++ [c]) of
+    (Just token, True) -> token : lexer cs ""
+    (Nothing, True) -> lexer cs (w ++ [c])
+    (Nothing, False) -> token : lexer remaining ""
+      where
+        (token, remaining) = if isDigit c && w == "" then extractInt (c : cs) else extractVar (w ++ c : cs)
+    (Just _, False) -> error "unreachable" -- getToken does not return this ever
 
 getToken :: String -> (Maybe Token, Bool)
 getToken w = if not (null valid) then (find w valid, True) else (Nothing, False)
   where
-    valid = filter (\(str, token) -> isPrefixTo str w) tokens
+    valid = filter (\(str, _) -> isPrefixTo str w) tokens
 
 extractInt :: String -> (Token, String)
 extractInt w = (Val (read (takeWhile isDigit w) :: Int), dropWhile isDigit w)
+
+extractVar :: String -> (Token, String)
+extractVar = separate ""
+  where
+    separate :: String -> String -> (Token, String)
+    separate var "" = (Var var, "")
+    separate var (' ' : cs) = (Var var, cs)
+    separate var (c : cs) = separate (var ++ [c]) cs
 
 extractString :: String -> (Token, String)
 extractString = separate ""
   where
     separate :: String -> String -> (Token, String)
-    separate var "" = (Var var, "")
-    separate var (' ' : token) = (Var var, token)
-    separate var (r : token) =
-      if any (\(str, _) -> isPrefixTo (r : token) str) tokens
-        then (Var (trim var), r : token)
-        else separate (var ++ [r]) token
-    trim :: String -> String
-    trim = takeWhile (/= ' ') . dropWhile (== ' ')
+    separate str ('"' : rest) = (Str str, rest)
+    separate str (c : cs) = separate (str ++ [c]) cs
+    separate _ [] = error "Expected '\"' but string was not closed!"
 
 isDigit :: Char -> Bool
 isDigit c = c >= '0' && c <= '9'
@@ -90,4 +104,4 @@ isPrefixTo r l = take (length l) r == l
 
 find :: String -> [(String, Token)] -> Maybe Token
 find _ [] = Nothing
-find w ((str, token) : tokens) = if w == str then Just token else find w tokens
+find w ((str, token) : rest) = if w == str then Just token else find w rest

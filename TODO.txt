@@ -1,5 +1,3 @@
--> print (expressions de moment, una o mes)) // look at how to print strings
--> read (enters de moment)
 -> instrucció for (i := a..b)
-    -> this desugars to i := 0 Loop (i < b) seq [{
-    }, i <- i + 1]
+    -> this desugars to (save i if it exists)i := a Loop (i < b) seq [{
+    }, i <- i + 1] (recover i if it existed)

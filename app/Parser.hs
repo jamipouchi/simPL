@@ -73,18 +73,7 @@ tokensToInstr (T.Print : T.LPt : tokens) = Print (Left expr) : tokensToInstr aft
   where
     (insideParenthesis, afterParenthesis) = separateParenthesis T.LPt tokens
     expr = makeExpression insideParenthesis
-tokensToInstr (T.Print : T.Quo : tokens) = Print (Right text) : tokensToInstr afterQuo
-  where
-    (insideQuo, afterQuo) = separateParenthesis T.Quo tokens
-    text =
-      foldl
-        ( \str token ->
-            str ++ case token of
-              T.Var var -> var
-              other -> show other
-        )
-        ""
-        insideQuo
+tokensToInstr (T.Print : T.Str str : rest) = Print (Right str) : tokensToInstr rest
 tokensToInstr (T.Print : _) = error "you need to place what you print inside parenthesis!"
 -- to extend to accept for a..b
 tokensToInstr (t1 : rest) = error $ "error on token: " ++ show t1 ++ " " ++ show rest
@@ -129,12 +118,6 @@ separateExpressionTokens tokens = ([], tokens)
 unite :: [T.Token] -> ([T.Token], [T.Token]) -> ([T.Token], [T.Token])
 unite iniExpr (restExpr, restTokens) = (iniExpr ++ restExpr, restTokens)
 
-separateAllExpressions :: [T.Token] -> [[T.Token]]
-separateAllExpressions [] = []
-separateAllExpressions tokens = expr : separateAllExpressions rest
-  where
-    (expr, rest) = separateExpressionTokens tokens
-
 makeExpression :: [T.Token] -> Expr
 makeExpression [] = error "Expected an expression but got nothing"
 makeExpression (token : rest) = makeExpression' (Left token) rest
@@ -174,7 +157,7 @@ makeExpression' leftValToken (leftOpToken : rightValToken : rightOpToken : rest)
       then makeExpression' (Right (Operator leftOpToken (makeExpression' leftValToken []) (makeExpression [rightValToken]))) (rightOpToken : rest)
       else Operator leftOpToken (makeExpression' leftValToken []) (makeExpression (rightValToken : rightOpToken : rest))
   | otherwise = error $ "expected value operator value, but got: " ++ show leftValToken ++ "..." ++ show leftOpToken ++ " " ++ show rightValToken
-makeExpression' instr1 rest = error $ "You can't start an expression with: " ++ "..." ++ show rest
+makeExpression' _ rest = error $ "You can't start an expression with: " ++ "..." ++ show rest
 
 separateParenthesis :: T.Token -> [T.Token] -> ([T.Token], [T.Token])
 separateParenthesis parenthesis = separateCounting (getOpen parenthesis) (getClose parenthesis) 1 0
@@ -206,5 +189,3 @@ separateParenthesis parenthesis = separateCounting (getOpen parenthesis) (getClo
     getClose T.LCu = T.RCu
     getClose T.RCu = T.RCu
     getClose nonParent = error $ "expected a parenthesis, but got: " ++ show nonParent
-
-getTokens = T.getTokens

@@ -1,41 +1,45 @@
 Test suite Lexer: RUNNING...
-=== prop_Val from tests\Lexer-test.hs:13 ===
+=== prop_Val from tests\Lexer-test.hs:9 ===
 +++ OK, passed 100 tests.
 
-=== prop_Var from tests\Lexer-test.hs:16 ===
-*** Failed! Falsified (after 8 tests and 3 shrinks):
-"<"
+=== prop_Var from tests\Lexer-test.hs:12 ===
++++ OK, passed 1 test.
 
-=== prop_Add from tests\Lexer-test.hs:19 ===
+=== prop_Add from tests\Lexer-test.hs:15 ===
 +++ OK, passed 100 tests.
 
-=== prop_Ass from tests\Lexer-test.hs:22 ===
-*** Failed! Falsified (after 3 tests and 3 shrinks):
-"}"
-0
-
-=== prop_Cond from tests\Lexer-test.hs:26 ===
+=== prop_Ass from tests\Lexer-test.hs:18 ===
 +++ OK, passed 100 tests.
 
-=== prop_Div from tests\Lexer-test.hs:29 ===
+=== prop_Cond from tests\Lexer-test.hs:21 ===
 +++ OK, passed 100 tests.
 
-=== prop_Loop from tests\Lexer-test.hs:32 ===
+=== prop_Div from tests\Lexer-test.hs:24 ===
 +++ OK, passed 100 tests.
 
-=== prop_Lth from tests\Lexer-test.hs:35 ===
+=== prop_Loop from tests\Lexer-test.hs:27 ===
 +++ OK, passed 100 tests.
 
-=== prop_Mod from tests\Lexer-test.hs:38 ===
+=== prop_Lth from tests\Lexer-test.hs:30 ===
 +++ OK, passed 100 tests.
 
-=== prop_Mul from tests\Lexer-test.hs:41 ===
+=== prop_Mod from tests\Lexer-test.hs:33 ===
 +++ OK, passed 100 tests.
 
-=== prop_Neq from tests\Lexer-test.hs:44 ===
+=== prop_Mul from tests\Lexer-test.hs:36 ===
 +++ OK, passed 100 tests.
 
-=== prop_Sub from tests\Lexer-test.hs:47 ===
+=== prop_Neq from tests\Lexer-test.hs:39 ===
++++ OK, passed 100 tests.
+
+=== prop_Sub from tests\Lexer-test.hs:42 ===
++++ OK, passed 100 tests.
+
+=== prop_Print_String from tests\Lexer-test.hs:45 ===
+*** Failed! Falsified (after 22 tests and 5 shrinks):
+"\""
+
+=== prop_Print_Expr from tests\Lexer-test.hs:48 ===
 +++ OK, passed 100 tests.
 
 Test suite Lexer: PASS
