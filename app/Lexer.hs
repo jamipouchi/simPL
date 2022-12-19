@@ -43,10 +43,10 @@ tokens =
     ("if", Cond),
     ("while", Loop),
     ("print", Print),
-    ("readNum", Read)
+    ("read", Read)
   ]
 
--- | Entry point to use the lexer
+-- | Entry point to use the lexer, given a string, returns a list of tokens
 getTokens :: String -> [Token]
 getTokens str = lexer str ""
 
@@ -78,23 +78,13 @@ getToken w = if not (null valid) then (find w valid, True) else (Nothing, False)
     valid = filter (\(str, _) -> isPrefixTo str w) tokens
 
 extractInt :: String -> (Token, String)
-extractInt w = (Val (read (takeWhile isDigit w) :: Int), dropWhile isDigit w)
+extractInt = (\(num, rest) -> (Val (read num :: Int), rest)) . span isDigit
 
 extractVar :: String -> (Token, String)
-extractVar = separate ""
-  where
-    separate :: String -> String -> (Token, String)
-    separate var "" = (Var var, "")
-    separate var (' ' : cs) = (Var var, cs)
-    separate var (c : cs) = separate (var ++ [c]) cs
+extractVar = (\(var, rest) -> (Var var, rest)) . break (== ' ')
 
 extractString :: String -> (Token, String)
-extractString = separate ""
-  where
-    separate :: String -> String -> (Token, String)
-    separate str ('"' : rest) = (Str str, rest)
-    separate str (c : cs) = separate (str ++ [c]) cs
-    separate _ [] = error "Expected '\"' but string was not closed!"
+extractString = (\(str, rest) -> (Str str, tail rest)) . break (== '"')
 
 isDigit :: Char -> Bool
 isDigit c = c >= '0' && c <= '9'

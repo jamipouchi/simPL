@@ -1,6 +1,6 @@
 module Parser (Expr (..), Instr (..), tokensToInstr) where
 
-import qualified Lexer as T (Token (..), getTokens)
+import qualified Lexer as T (Token (..))
 
 operator :: T.Token -> Bool
 operator T.Add = True
@@ -18,9 +18,18 @@ instance Ord Priority where
   compare left right = compare (fromEnum right) (fromEnum left)
 
 priority :: T.Token -> Priority
-priority T.Add = LOW
-priority T.Sub = LOW
-priority _ = HIGH
+priority token = case token of
+  T.Add -> LOW
+  T.Sub -> LOW
+  _ -> HIGH
+
+-- | Expressions in SimpleLp. Can be evaluated to return a Maybe Int
+data Expr
+  = Val Int
+  | Var String
+  | Operator T.Token Expr Expr
+  | Read
+  deriving (Show)
 
 value :: T.Token -> Bool
 value token = case token of
@@ -33,14 +42,6 @@ valueOrExpr :: Either T.Token Expr -> Bool
 valueOrExpr (Right _) = True
 valueOrExpr (Left val) = value val
 
--- | Expressions in SimpleLp. Can be evaluated to return a Maybe Int
-data Expr
-  = Val Int
-  | Var String
-  | Operator T.Token Expr Expr
-  | Read
-  deriving (Show)
-
 -- | Instructions in SimpleLP. Can be executed to return a LookUpTable
 data Instr
   = Ass String Expr
@@ -51,7 +52,7 @@ data Instr
   | NoOp
   deriving (Show)
 
--- | the main function. TODO: document
+-- | Entry point of the parser. Given a list of tokens, returns a list of instructions
 tokensToInstr :: [T.Token] -> [Instr]
 tokensToInstr [] = []
 tokensToInstr (T.Var var : T.Ass : tokens) = Ass var expr : restOfInstr
@@ -160,32 +161,24 @@ makeExpression' leftValToken (leftOpToken : rightValToken : rightOpToken : rest)
 makeExpression' _ rest = error $ "You can't start an expression with: " ++ "..." ++ show rest
 
 separateParenthesis :: T.Token -> [T.Token] -> ([T.Token], [T.Token])
-separateParenthesis parenthesis = separateCounting (getOpen parenthesis) (getClose parenthesis) 1 0
+separateParenthesis parenthesis = (\(l, r) -> (init l, r)) . (splitAt =<< (length . takeWhile (/= 0) . myScan))
   where
-    separateCounting :: T.Token -> T.Token -> Int -> Int -> [T.Token] -> ([T.Token], [T.Token])
-    separateCounting lParent rParent openPt closePt [token]
-      | openPt - closePt == 1 && token == rParent = ([], [])
-      | otherwise = error "Not enough closing parenthesis"
-    separateCounting lParent rParent openPt closePt (token : rest)
-      | openPt - closePt == 1 && token == rParent = ([], rest)
-      | openPt > closePt =
-        if token == lParent
-          then unite [token] (separateCounting lParent rParent (openPt + 1) closePt rest)
-          else
-            if token == rParent
-              then unite [token] (separateCounting lParent rParent openPt (closePt + 1) rest)
-              else unite [token] (separateCounting lParent rParent openPt closePt rest)
-      | otherwise = error "Too much closing parenthesis"
-    separateCounting _ _ _ _ [] = error "Couln't match parenthesis"
+    myScan :: [T.Token] -> [Int]
+    myScan = scanl (flip op) 1
+    op c
+      | c == getOpen parenthesis = (+ 1)
+      | c == getClose parenthesis = subtract 1
+      | otherwise = id
     getOpen :: T.Token -> T.Token
-    getOpen T.LPt = T.LPt
-    getOpen T.RPt = T.LPt
-    getOpen T.LCu = T.LCu
-    getOpen T.RCu = T.LCu
-    getOpen nonParent = error $ "expected a parenthesis, but got: " ++ show nonParent
-    getClose :: T.Token -> T.Token
-    getClose T.LPt = T.RPt
-    getClose T.RPt = T.RPt
-    getClose T.LCu = T.RCu
-    getClose T.RCu = T.RCu
-    getClose nonParent = error $ "expected a parenthesis, but got: " ++ show nonParent
+    getOpen par = case par of
+      T.LPt -> T.LPt
+      T.RPt -> T.LPt
+      T.LCu -> T.LCu
+      T.RCu -> T.LCu
+      nonParent -> error $ "expected a parenthesis, but got: " ++ show nonParent
+    getClose par = case par of
+      T.LPt -> T.RPt
+      T.RPt -> T.RPt
+      T.LCu -> T.RCu
+      T.RCu -> T.RCu
+      nonParent -> error $ "expected a parenthesis, but got: " ++ show nonParent

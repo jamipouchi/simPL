@@ -7,13 +7,16 @@ import Lexer
 import LookUpTable
 import Parser
 
+-- todo, choose as interpreter or give file
+
 -- | Entry point. You execute with a file, and it executes the instructions
 main :: IO LookUpTable
 main = do
   content <- readFileToString
   let tokens = getTokens content
   let instructions = tokensToInstr tokens
-  exec (Seq instructions) empty
+  lut <- exec (Seq instructions) empty
+  print lut
   main
 
 mainFromString :: String -> IO LookUpTable

@@ -36,7 +36,7 @@ Test suite Lexer: RUNNING...
 +++ OK, passed 100 tests.
 
 === prop_Print_String from tests\Lexer-test.hs:45 ===
-*** Failed! Falsified (after 22 tests and 5 shrinks):
+*** Failed! Falsified (after 7 tests and 3 shrinks):
 "\""
 
 === prop_Print_Expr from tests\Lexer-test.hs:48 ===

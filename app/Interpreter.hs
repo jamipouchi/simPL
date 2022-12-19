@@ -84,6 +84,6 @@ exec (Print toPrint) lut = do
       res <- eval expr lut
       case res of
         Just x -> print x
-        Nothing -> print "couldn't evalue the expression"
+        Nothing -> print "couldn't evaluate the expression"
     Right str -> putStrLn str
   return lut
