@@ -7,11 +7,20 @@ import Lexer
 import LookUpTable
 import Parser
 
--- todo, choose as interpreter or give file
-
 -- | Entry point. You execute with a file, and it executes the instructions
 main :: IO LookUpTable
 main = do
+  putStrLn "Do you want to load a file [y], or use as interpreter [n]"
+  option <- getChar
+  case option of
+    'y' -> executeFromFile
+    'n' -> executeFromTerminal
+    unrecognized -> do
+      putStrLn $ "unrecognized option: " ++ [unrecognized]
+      main
+
+executeFromFile :: IO LookUpTable
+executeFromFile = do
   content <- readFileToString
   let tokens = getTokens content
   let instructions = tokensToInstr tokens
@@ -19,11 +28,14 @@ main = do
   print lut
   main
 
-mainFromString :: String -> IO LookUpTable
-mainFromString str = do
-  let tokens = getTokens str
+executeFromTerminal :: IO LookUpTable
+executeFromTerminal = do
+  content <- getContents
+  let tokens = getTokens content
   let instructions = tokensToInstr tokens
-  exec (Seq instructions) empty
+  lut <- exec (Seq instructions) empty
+  print lut
+  main
 
 -- -- Space is 32, } is 125. So we accept chars >= 32 and <= 125
 readFileToString :: IO [Char]
