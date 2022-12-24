@@ -22,6 +22,8 @@ data Token
   | Loop
   | Print
   | Read
+  | For
+  | Rge
   deriving (Eq, Show)
 
 -- | The mapping from string -> Token
@@ -43,7 +45,9 @@ tokens =
     ("if", Cond),
     ("while", Loop),
     ("print", Print),
-    ("read", Read)
+    ("read", Read),
+    ("for", For),
+    ("..", Rge)
   ]
 
 -- | Entry point to use the lexer, given a string, returns a list of tokens
@@ -81,7 +85,9 @@ extractInt :: String -> (Token, String)
 extractInt = (\(num, rest) -> (Val (read num :: Int), rest)) . span isDigit
 
 extractVar :: String -> (Token, String)
-extractVar = (\(var, rest) -> (Var var, rest)) . break (== ' ')
+extractVar = (\(var, rest) -> (Var var, rest)) . break (invalidLetter)
+  where
+    invalidLetter = \l -> not (l >= 'a' && l <= 'z') && not (l >= 'A' && l <= 'Z')
 
 extractString :: String -> (Token, String)
 extractString = (\(str, rest) -> (Str str, tail rest)) . break (== '"')

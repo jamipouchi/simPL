@@ -70,13 +70,22 @@ tokensToInstr (T.Loop : tokens) = Loop expr instr : restOfInstr
   where
     (expr, restOfTokens) = extractExpression tokens
     (instr : restOfInstr) = tokensToInstr restOfTokens
+tokensToInstr (T.For : T.Var var : T.Val minVal : T.Rge : T.Val maxVal : rest) =
+  Seq
+    [ Ass (var ++ "_save") (Var var), -- can't set var_save to nothing...
+      Ass var (Val minVal),
+      Loop (Operator T.Lth (Var var) (Val maxVal)) (Seq [firstInstr, Ass var (Operator T.Add (Var var) (Val 1))]),
+      Ass var (Var (var ++ "_save"))
+    ] :
+  restOfInstr
+  where
+    ([firstInstr], restOfInstr) = splitAt 1 (tokensToInstr rest)
 tokensToInstr (T.Print : T.LPt : tokens) = Print (Left expr) : tokensToInstr afterParenthesis
   where
     (insideParenthesis, afterParenthesis) = separateParenthesis T.LPt tokens
     expr = makeExpression insideParenthesis
 tokensToInstr (T.Print : T.Str str : rest) = Print (Right str) : tokensToInstr rest
 tokensToInstr (T.Print : _) = error "you need to place what you print inside parenthesis!"
--- to extend to accept for a..b
 tokensToInstr (t1 : rest) = error $ "error on token: " ++ show t1 ++ " " ++ show rest
 
 extractExpression :: [T.Token] -> (Expr, [T.Token])

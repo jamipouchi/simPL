@@ -30,7 +30,8 @@ executeFromFile = do
 
 executeFromTerminal :: IO LookUpTable
 executeFromTerminal = do
-  content <- getContents
+  _ <- getLine
+  content <- getLine
   let tokens = getTokens content
   let instructions = tokensToInstr tokens
   lut <- exec (Seq instructions) empty
