@@ -25,7 +25,7 @@ eval _ _ = error "unreachable"
 
 readNum :: IO (Maybe Int)
 readNum = do
-  num <- getContents
+  num <- getLine
   if all isDigit num then return $ Just (read num :: Int) else return Nothing
   where
     isDigit :: Char -> Bool
